@@ -1,4 +1,9 @@
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, {
+  AxiosError,
+  AxiosRequestConfig,
+  AxiosRequestTransformer,
+  AxiosResponse,
+} from 'axios';
 import { stringify } from 'query-string';
 import { camelizeKeys, decamelize, decamelizeKeys } from 'humps';
 
@@ -20,7 +25,7 @@ axios.interceptors.response.use(
       handleToast(error?.response);
     }
 
-    return Promise.reject(error.response);
+    return Promise.reject(error?.response);
   },
 );
 
@@ -65,18 +70,20 @@ export function request(config: RequestConfig) {
   };
 
   const API_VERSION = `v1`;
+
+  const transformRequest: any = axios.defaults.transformRequest;
+  const transformResponse: any = axios.defaults.transformResponse;
+
   config.baseURL = `${process.env.BUYER_API_END_POINT}${API_VERSION}`;
   config.transformResponse = [
-    ...axios.defaults.transformResponse,
+    ...transformResponse,
     (data) => camelizeKeys(data),
   ];
-  config.transformRequest = [
-    decamelizeThatDontBreaksFile,
-    ...axios.defaults.transformRequest,
-  ];
+  config.transformRequest = [decamelizeThatDontBreaksFile, ...transformRequest];
   config.paramsSerializer = function (params) {
     return stringify(decamelizeKeys(params));
   };
+
   return axios(config);
 }
 
@@ -84,6 +91,5 @@ export function handleToast(e: AxiosResponse) {
   const { message } = e?.data ?? {};
   if (message) {
     console.log(message);
-    // toast.dark(message);
   }
 }
